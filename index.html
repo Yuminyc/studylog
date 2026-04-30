@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USCPA Study Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #1C2333;
+    --border: #30363D;
+    --border2: #21262D;
+    --t1: #E6EDF3;
+    --t2: #8B949E;
+    --t3: #484F58;
+    --blue: #58A6FF;
+    --blue-dim: #1F3A5F;
+    --green: #3FB950;
+    --green-dim: #0F2A1A;
+    --yellow: #D29922;
+    --yellow-dim: #2D2000;
+    --red: #F85149;
+    --red-dim: #3B1219;
+    --purple: #BC8CFF;
+    --far: #58A6FF;
+    --tcp: #3FB950;
+    --reg: #D29922;
+    --aud: #BC8CFF;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--t1);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 210px;
+    min-width: 210px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .logo {
+    padding: 22px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-title { font-size: 11px; font-weight: 800; color: var(--blue); letter-spacing: 3px; }
+  .logo-sub { font-size: 10px; color: var(--t3); letter-spacing: 1px; margin-top: 2px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 18px;
+    color: var(--t2); font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all .15s;
+    background: none; border-top: none; border-right: none; border-bottom: none;
+    text-align: left; width: 100%;
+  }
+  .nav-item:hover { color: var(--t1); background: rgba(88,166,255,0.05); }
+  .nav-item.active { color: var(--blue); background: rgba(88,166,255,0.08); border-left-color: var(--blue); }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-user { margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--t3); }
+
+  /* ── Main ── */
+  #main {
+    margin-left: 210px;
+    flex: 1;
+    padding: 28px;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+
+  /* ── Pages ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-title {
+    font-size: 20px; font-weight: 800; color: var(--t1);
+    margin-bottom: 22px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* ── Labels ── */
+  .lbl {
+    font-size: 10px; font-weight: 700; color: var(--t3);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  /* ── Chips ── */
+  .chip { display: inline-flex; align-items: center; border-radius: 6px; padding: 2px 9px; font-size: 11px; font-weight: 700; }
+  .chip-far    { background: rgba(88,166,255,.15); color: var(--far); }
+  .chip-tcp    { background: rgba(63,185,80,.15);  color: var(--tcp); }
+  .chip-reg    { background: rgba(210,153,34,.15); color: var(--reg); }
+  .chip-aud    { background: rgba(188,140,255,.15);color: var(--aud); }
+  .chip-high   { background: rgba(248,81,73,.15);  color: var(--red); }
+  .chip-medium { background: rgba(210,153,34,.15); color: var(--yellow); }
+  .chip-low    { background: rgba(63,185,80,.15);  color: var(--green); }
+  .chip-gray   { background: rgba(139,148,158,.15); color: var(--t2); }
+  .chip-red    { background: rgba(248,81,73,.15); color: var(--red); }
+
+  /* ── Inputs ── */
+  input, select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--t1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    transition: border .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+  textarea { resize: vertical; }
+  select option { background: var(--surface); }
+
+  /* ── Buttons ── */
+  .btn {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-green  { background: var(--green); }
+  .btn-red    { background: var(--red); }
+  .btn-ghost  { background: var(--surface2); color: var(--t2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--t1); border-color: var(--t2); }
+  .btn-sm     { padding: 5px 11px; font-size: 12px; }
+  .btn-full   { width: 100%; justify-content: center; }
+
+  /* ── Progress bar ── */
+  .bar-wrap { background: var(--border2); border-radius: 99px; height: 5px; }
+  .bar-fill  { height: 100%; border-radius: 99px; transition: width .4s; }
+
+  /* ── Stars ── */
+  .star { font-size: 22px; cursor: pointer; color: var(--border); transition: color .1s; }
+  .star.active { color: var(--yellow); }
+
+  /* ── Table ── */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th { padding: 8px 10px; text-align: left; color: var(--t3); font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border2); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: rgba(88,166,255,.03); }
+
+  /* ── Filter tabs ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; background: var(--surface); border: 1px solid var(--border);
+    color: var(--t2); transition: all .15s;
+  }
+  .tab:hover { color: var(--t1); }
+  .tab.active { background: rgba(88,166,255,.12); border-color: var(--blue); color: var(--blue); }
+
+  /* ── Form row ── */
+  .form-row { display: grid; gap: 14px; margin-bottom: 16px; }
+  .form-row-2 { grid-template-columns: 1fr 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; }
+
+  /* ── Stat card ── */
+  .stat-val { font-size: 28px; font-weight: 800; margin-top: 4px; }
+  .stat-sub { font-size: 12px; color: var(--t2); margin-top: 2px; }
+
+  /* ── Circle progress ── */
+  .circle-wrap { position: relative; display: inline-block; }
+  .circle-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+
+  /* ── Method buttons ── */
+  .method-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .method-btn { padding: 5px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--t2); transition: all .15s; }
+  .method-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 28px 0; color: var(--t3); font-size: 13px; }
+
+  /* ── Alert box ── */
+  .alert-red { background: var(--red-dim); border: 1px solid rgba(248,81,73,.3); border-radius: 10px; padding: 16px; }
+
+  /* ── Badge ── */
+  .badge-new { background: var(--red); color: #fff; border-radius: 6px; padding: 2px 7px; font-size: 10px; font-weight: 700; }
+
+  /* ── Saved toast ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--green); color: #fff;
+    padding: 12px 20px; border-radius: 10px;
+    font-weight: 600; font-size: 14px;
+    box-shadow: var(--shadow);
+    opacity: 0; transform: translateY(8px);
+    transition: all .25s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── Checkbox ── */
+  input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; flex-shrink: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav id="sidebar">
+  <div class="logo">
+    <div class="logo-title">USCPA</div>
+    <div class="logo-sub">Study Manager</div>
+  </div>
+  <button class="nav-item active" onclick="nav('dashboard')">   <span class="nav-icon">⬛</span>ダッシュボード</button>
+  <button class="nav-item" onclick="nav('record')">    <span class="nav-icon">✏</span>学習記録入力</button>
+  <button class="nav-item" onclick="nav('weakpoints')"><span class="nav-icon">△</span>弱点管理</button>
+  <button class="nav-item" onclick="nav('weekly')">    <span class="nav-icon">📅</span>週次プラン</button>
+  <button class="nav-item" onclick="nav('tasks')">     <span class="nav-icon">☑</span>タスク管理</button>
+  <button class="nav-item" onclick="nav('history')">   <span class="nav-icon">≡</span>学習履歴</button>
+  <button class="nav-item" onclick="nav('analysis')">  <span class="nav-icon">↗</span>分析・レポート</button>
+  <button class="nav-item" onclick="nav('settings')">  <span class="nav-icon">⚙</span>設定</button>
+  <div class="nav-user">👤 受験生</div>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main id="main">
+
+<!-- ── 1. DASHBOARD ── -->
+<div id="page-dashboard" class="page active">
+  <div class="page-title">ダッシュボード</div>
+  <div class="grid-2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <div class="lbl">今日の学習時間</div>
+          <div class="stat-val" id="d-today-h">0.0<span style="font-size:14px;color:var(--t2);margin-left:6px">h</span></div>
+        </div>
+        <div style="text-align:center">
+          <div class="lbl">今週達成率</div>
+          <svg width="70" height="70" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--border2)" stroke-width="3"/>
+            <circle id="d-arc" cx="18" cy="18" r="15" fill="none" stroke="var(--blue)" stroke-width="3"
+              stroke-dasharray="0 94.25" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+            <text id="d-pct-txt" x="18" y="22" text-anchor="middle" fill="var(--blue)" font-size="8" font-weight="700" font-family="DM Sans">0%</text>
+          </svg>
+        </div>
+      </div>
+      <div class="lbl">科目別累計（時間）</div>
+      <div id="d-sub-bars"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card" id="d-wp-card">
+        <div class="lbl">未解決の弱点</div>
+        <div class="stat-val" id="d-wp-cnt" style="color:var(--t1)">⚠ 0 件</div>
+        <div id="d-wp-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="lbl">未完了タスク</div>
+            <div class="stat-val" id="d-task-cnt">0 件</div>
+          </div>
+          <div id="d-overdue-badge"></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="lbl">直近の記録</div>
+        <div id="d-recent"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. RECORD INPUT ── -->
+<div id="page-record" class="page">
+  <div class="page-title">学習記録入力</div>
+  <div class="card" style="max-width:580px">
+    <div class="form-row form-row-2">
+      <div class="form-group"><div class="lbl">日付</div><input type="date" id="r-date"></div>
+      <div class="form-group"><div class="lbl">科目</div>
+        <select id="r-subject"><option>FAR</option><option>TCP</option><option>REG</option><option>AUD</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <div class="lbl">学習内容</div>
+      <input type="text" id="r-content" placeholder="例）Chapter1 GAAPの基本概念">
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <div class="lbl">学習時間（時間）</div>
+        <input type="number" id="r-hours" value="1.5" step="0.5" min="0.5" max="12">
+      </div>
+      <div class="form-group">
+        <div class="lbl">学習方法</div>
+        <div class="method-group" id="r-method-group">
+          <button class="method-btn active" data-method="問題演習">問題演習</button>
+          <button class="method-btn" data-method="講義視聴">講義視聴</button>
+          <button class="method-btn" data-method="読書">読書</button>
+          <button class="method-btn" data-method="その他">その他</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <div class="lbl">理解度</div>
+      <div id="r-stars" style="display:flex;gap:2px">
+        <span class="star active" data-n="1">★</span>
+        <span class="star active" data-n="2">★</span>
+        <span class="star active" data-n="3">★</span>
+        <span class="star" data-n="4">★</span>
+        <span class="star" data-n="5">★</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <div class="lbl">一言メモ</div>
+      <textarea id="r-memo" rows="3" placeholder="気づきや次回の課題…"></textarea>
+    </div>
+    <button class="btn btn-full" id="r-save-btn" onclick="saveRecord()">学習記録を保存</button>
+  </div>
+</div>
+
+<!-- ── 3. WEAK POINTS ── -->
+<div id="page-weakpoints" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+    <div class="page-title" style="margin-bottom:0">弱点管理 <span class="badge-new">NEW</span></div>
+    <button class="btn" onclick="toggleWpForm()">＋ 弱点を追加する</button>
+  </div>
+  <div id="wp-form" class="card" style="margin-bottom:16px;display:none">
+    <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
+      <div class="form-group"><div class="lbl">弱点内容</div><input id="wp-content" placeholder="弱点の内容"></div>
+      <div class="form-group"><div class="lbl">科目</div>
+        <select id="wp-subject"><option>FAR</option><option>TCP</option><option>REG</option><option>AUD</option></select>
+      </div>
+      <div class="form-group"><div class="lbl">論点タグ</div><input id="wp-tag" placeholder="固定資産"></div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><div class="lbl">原因</div><input id="wp-cause" placeholder="基礎の理解不足"></div>
+      <div class="form-group"><div class="lbl">対策</div><input id="wp-counter" placeholder="テキストを再読する"></div>
+    </div>
+    <button class="btn" onclick="addWp()">追加する</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-wpf="unresolved" onclick="setWpFilter(this,'unresolved')">未解決</div>
+    <div class="tab" data-wpf="recent" onclick="setWpFilter(this,'recent')">解決済み（30日以内）</div>
+    <div class="tab" data-wpf="old" onclick="setWpFilter(this,'old')">解決済み（30日超）</div>
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr>
+        <th>弱点内容</th><th>科目</th><th>論点タグ</th><th>発生日</th><th>原因</th><th>対策</th><th>操作</th>
+      </tr></thead>
+      <tbody id="wp-tbody"></tbody>
+    </table>
+    <div id="wp-empty" class="empty" style="display:none">該当する弱点はありません</div>
+  </div>
+</div>
+
+<!-- ── 4. WEEKLY PLAN ── -->
+<div id="page-weekly" class="page">
+  <div class="page-title">週次プラン</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="lbl">今週の目標</div>
+      <div class="grid-3" style="margin-bottom:20px">
+        <div><div class="lbl">学習時間</div><div style="display:flex;align-items:center;gap:6px"><input type="number" id="cfg-weekH" style="width:70px" step="1" min="1"><span style="font-size:12px;color:var(--t2)">h/週</span></div></div>
+        <div><div class="lbl">達成率目標</div><div style="display:flex;align-items:center;gap:6px"><input type="number" id="cfg-rateGoal" style="width:70px" step="5" min="0" max="100"><span style="font-size:12px;color:var(--t2)">%</span></div></div>
+        <div><div class="lbl">弱点解消目標</div><div style="display:flex;align-items:center;gap:6px"><input type="number" id="cfg-wpGoal" style="width:70px" step="1" min="0"><span style="font-size:12px;color:var(--t2)">件</span></div></div>
+      </div>
+      <div class="lbl">科目別計画（時間/週）</div>
+      <div id="weekly-sub-rows"></div>
+      <button class="btn btn-full" style="margin-top:16px" onclick="saveCfg()">目標を保存</button>
+    </div>
+    <div class="card">
+      <div class="lbl">今週の重点タスク（優先度：高）</div>
+      <div id="weekly-priority-tasks" style="margin-bottom:20px"></div>
+      <div class="lbl">未解決弱点数</div>
+      <div id="weekly-wp-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 5. TASKS ── -->
+<div id="page-tasks" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+    <div class="page-title" style="margin-bottom:0">タスク管理</div>
+    <button class="btn" onclick="toggleTaskForm()">＋ タスクを追加</button>
+  </div>
+  <div id="task-form" class="card" style="margin-bottom:16px;display:none">
+    <div class="form-row" style="grid-template-columns:3fr 1fr 1fr 1fr">
+      <div class="form-group"><div class="lbl">タスク名</div><input id="t-title" placeholder="タスク名"></div>
+      <div class="form-group"><div class="lbl">科目</div>
+        <select id="t-subject"><option>FAR</option><option>TCP</option><option>REG</option><option>AUD</option></select>
+      </div>
+      <div class="form-group"><div class="lbl">期限</div><input type="date" id="t-deadline"></div>
+      <div class="form-group"><div class="lbl">優先度</div>
+        <select id="t-priority"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select>
+      </div>
+    </div>
+    <button class="btn" onclick="addTask()">追加する</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="setTaskFilter(this,'all')">すべて</div>
+    <div class="tab" onclick="setTaskFilter(this,'todo')">未着手</div>
+    <div class="tab" onclick="setTaskFilter(this,'inprogress')">進行中</div>
+    <div class="tab" onclick="setTaskFilter(this,'done')">完了</div>
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:32px"></th><th>タスク名</th><th>科目</th><th>優先度</th><th>期限</th><th>ステータス</th><th></th>
+      </tr></thead>
+      <tbody id="task-tbody"></tbody>
+    </table>
+    <div id="task-empty" class="empty" style="display:none">タスクがありません</div>
+  </div>
+</div>
+
+<!-- ── 6. HISTORY ── -->
+<div id="page-history" class="page">
+  <div class="page-title">学習履歴</div>
+  <div class="tabs" id="hist-tabs">
+    <div class="tab active" onclick="setHistFilter(this,'all')">すべて</div>
+    <div class="tab" onclick="setHistFilter(this,'FAR')">FAR</div>
+    <div class="tab" onclick="setHistFilter(this,'TCP')">TCP</div>
+    <div class="tab" onclick="setHistFilter(this,'REG')">REG</div>
+    <div class="tab" onclick="setHistFilter(this,'AUD')">AUD</div>
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>日付</th><th>科目</th><th>学習内容</th><th>時間</th><th>理解度</th><th>メモ</th><th></th></tr></thead>
+      <tbody id="hist-tbody"></tbody>
+    </table>
+    <div id="hist-empty" class="empty" style="display:none">記録がありません</div>
+  </div>
+</div>
+
+<!-- ── 7. ANALYSIS ── -->
+<div id="page-analysis" class="page">
+  <div class="page-title">分析・レポート</div>
+  <div class="grid-4" style="margin-bottom:16px" id="an-stats"></div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card"><div class="lbl">週別学習時間</div><canvas id="ch-weekly" height="160"></canvas></div>
+    <div class="card"><div class="lbl">科目別学習時間</div><canvas id="ch-subject" height="160"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="lbl">未解決弱点の分布</div><div style="display:flex;align-items:center"><canvas id="ch-wp" height="160" style="max-width:160px"></canvas><div id="an-wp-legend" style="margin-left:16px"></div></div></div>
+    <div class="card"><div class="lbl">理解度の分布</div><canvas id="ch-und" height="160"></canvas></div>
+  </div>
+</div>
+
+<!-- ── 8. SETTINGS ── -->
+<div id="page-settings" class="page">
+  <div class="page-title">設定</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="lbl">目標設定</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:14px">週次プランページでも変更できます。</p>
+      <div style="margin-bottom:12px"><div class="lbl">週間学習時間目標</div><div style="display:flex;align-items:center;gap:8px"><input type="number" id="s-weekH" style="width:80px" step="1"><span style="font-size:12px;color:var(--t2)">時間/週</span></div></div>
+      <div style="margin-bottom:12px"><div class="lbl">達成率目標</div><div style="display:flex;align-items:center;gap:8px"><input type="number" id="s-rateGoal" style="width:80px" step="5" max="100"><span style="font-size:12px;color:var(--t2)">%</span></div></div>
+      <div style="margin-bottom:20px"><div class="lbl">弱点解消目標</div><div style="display:flex;align-items:center;gap:8px"><input type="number" id="s-wpGoal" style="width:80px" step="1"><span style="font-size:12px;color:var(--t2)">件/週</span></div></div>
+      <button class="btn btn-full" onclick="saveCfgFromSettings()">設定を保存</button>
+    </div>
+    <div class="card">
+      <div class="lbl">データ管理</div>
+      <div class="alert-red">
+        <div style="font-size:13px;color:var(--red);font-weight:700;margin-bottom:6px">⚠️ 危険な操作</div>
+        <div style="font-size:12px;color:rgba(248,81,73,.6);margin-bottom:14px">すべての学習記録・弱点・タスクが削除されます。この操作は元に戻せません。</div>
+        <button class="btn btn-red btn-full" onclick="clearAll()">すべてのデータを削除する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast">✓ 保存しました！</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE & STORAGE
+// ═══════════════════════════════════════════
+const SUBJECTS = ['FAR','TCP','REG','AUD'];
+const SC = { FAR:'var(--far)', TCP:'var(--tcp)', REG:'var(--reg)', AUD:'var(--aud)' };
+const SC_HEX = { FAR:'#58A6FF', TCP:'#3FB950', REG:'#D29922', AUD:'#BC8CFF' };
+
+function load(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } }
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+let records = load('uscpa_rec', []);
+let wps     = load('uscpa_wps', []);
+let tasks   = load('uscpa_tsk', []);
+let cfg     = load('uscpa_cfg', { weekH:20, rateGoal:90, wpGoal:5, subH:{ FAR:8, TCP:5, REG:4, AUD:3 } });
+
+function persist() {
+  save('uscpa_rec', records);
+  save('uscpa_wps', wps);
+  save('uscpa_tsk', tasks);
+  save('uscpa_cfg', cfg);
+}
+
+const uid  = () => Math.random().toString(36).slice(2,9);
+const today = () => new Date().toISOString().split('T')[0];
+const wkStart = () => { const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)); return d.toISOString().split('T')[0]; };
+const thirtyAgo = () => { const d=new Date(Date.now()-30*86400000); return d.toISOString().split('T')[0]; };
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+let curPage = 'dashboard';
+let wpFilter = 'unresolved';
+let taskFilter = 'all';
+let histFilter = 'all';
+let charts = {};
+
+function nav(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-item')[['dashboard','record','weakpoints','weekly','tasks','history','analysis','settings'].indexOf(p)].classList.add('active');
+  curPage = p;
+  renderPage(p);
+}
+
+function renderPage(p) {
+  if (p==='dashboard')  renderDashboard();
+  if (p==='weakpoints') renderWp();
+  if (p==='weekly')     renderWeekly();
+  if (p==='tasks')      renderTasks();
+  if (p==='history')    renderHistory();
+  if (p==='analysis')   renderAnalysis();
+  if (p==='settings')   renderSettings();
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function chip(cls, text) { return `<span class="chip chip-${cls}">${text}</span>`; }
+function chipSub(s) { return chip(s.toLowerCase(), s); }
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════
+//  1. DASHBOARD
+// ═══════════════════════════════════════════
+function renderDashboard() {
+  const todayStr = today();
+  const wsStr    = wkStart();
+  const todayH   = records.filter(r=>r.date===todayStr).reduce((s,r)=>s+r.hours,0);
+  const weekH    = records.filter(r=>r.date>=wsStr).reduce((s,r)=>s+r.hours,0);
+  const pct      = Math.min(100, Math.round((weekH/cfg.weekH)*100));
+  const subH     = SUBJECTS.reduce((a,s)=>({...a,[s]:records.filter(r=>r.subject===s).reduce((x,r)=>x+r.hours,0)}),{});
+  const unresWp  = wps.filter(w=>w.status!=='resolved');
+  const openTask = tasks.filter(t=>t.status!=='done');
+
+  // Today hours
+  document.getElementById('d-today-h').innerHTML = `${todayH.toFixed(1)}<span style="font-size:14px;color:var(--t2);margin-left:6px">h</span>`;
+
+  // Circle
+  const arc = document.getElementById('d-arc');
+  arc.setAttribute('stroke-dasharray', `${(pct/100)*94.25} 94.25`);
+  document.getElementById('d-pct-txt').textContent = pct+'%';
+
+  // Sub bars
+  const sb = document.getElementById('d-sub-bars');
+  sb.innerHTML = SUBJECTS.map(s => {
+    const goal = cfg.subH?.[s] || 10;
+    const p = Math.min(100, ((subH[s]||0)/goal)*100).toFixed(0);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+      ${chipSub(s)}
+      <div class="bar-wrap" style="flex:1"><div class="bar-fill" style="width:${p}%;background:${SC_HEX[s]}"></div></div>
+      <span style="font-size:12px;color:var(--t2);min-width:38px;text-align:right">${(subH[s]||0).toFixed(1)}h</span>
+    </div>`;
+  }).join('');
+
+  // Weak points
+  const wCard = document.getElementById('d-wp-card');
+  const isHigh = unresWp.length >= 10;
+  wCard.style.background = isHigh ? 'var(--red-dim)' : '';
+  wCard.style.borderColor = isHigh ? 'rgba(248,81,73,.3)' : '';
+  document.getElementById('d-wp-cnt').innerHTML = `⚠ ${unresWp.length} 件`;
+  document.getElementById('d-wp-cnt').style.color = isHigh ? 'var(--red)' : 'var(--t1)';
+  document.getElementById('d-wp-chips').innerHTML = SUBJECTS.map(s=>`${chipSub(s)} <span style="font-size:11px;color:var(--t2)">${wps.filter(w=>w.subject===s&&w.status!=='resolved').length}</span>`).join('<span style="margin:0 4px;color:var(--t3)">·</span>');
+
+  // Tasks
+  document.getElementById('d-task-cnt').textContent = openTask.length + ' 件';
+  const overdue = tasks.filter(t=>t.status!=='done'&&t.deadline<todayStr).length;
+  document.getElementById('d-overdue-badge').innerHTML = overdue>0 ? `<span class="chip chip-red">期限超過 ${overdue}件</span>` : '';
+
+  // Recent
+  const rec = document.getElementById('d-recent');
+  const recent = records.slice(-5).reverse();
+  if (!recent.length) { rec.innerHTML = '<div class="empty">記録がありません</div>'; return; }
+  rec.innerHTML = recent.map(r=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border2)">
+    <span style="font-size:11px;color:var(--t3);min-width:72px">${r.date}</span>
+    ${chipSub(r.subject)}
+    <span style="flex:1;font-size:12px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.content}</span>
+    <span style="font-size:11px;color:var(--t2)">${r.hours}h</span>
+  </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  2. RECORD INPUT
+// ═══════════════════════════════════════════
+let recordUnderstanding = 3;
+let recordMethod = '問題演習';
+
+document.getElementById('r-date').value = today();
+document.getElementById('t-deadline').value = today();
+
+document.querySelectorAll('#r-method-group .method-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#r-method-group .method-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    recordMethod = btn.dataset.method;
+  });
+});
+
+document.querySelectorAll('#r-stars .star').forEach(star => {
+  star.addEventListener('click', () => {
+    recordUnderstanding = +star.dataset.n;
+    document.querySelectorAll('#r-stars .star').forEach((s,i) => s.classList.toggle('active', i < recordUnderstanding));
+  });
+});
+
+function saveRecord() {
+  const content = document.getElementById('r-content').value.trim();
+  if (!content) { alert('学習内容を入力してください'); return; }
+  records.push({
+    id: uid(),
+    date: document.getElementById('r-date').value,
+    subject: document.getElementById('r-subject').value,
+    content,
+    hours: +document.getElementById('r-hours').value || 1,
+    method: recordMethod,
+    understanding: recordUnderstanding,
+    memo: document.getElementById('r-memo').value.trim(),
+  });
+  persist();
+  document.getElementById('r-content').value = '';
+  document.getElementById('r-memo').value = '';
+  showToast();
+}
+
+// ═══════════════════════════════════════════
+//  3. WEAK POINTS
+// ═══════════════════════════════════════════
+function toggleWpForm() {
+  const f = document.getElementById('wp-form');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+function setWpFilter(el, f) {
+  document.querySelectorAll('.tab[data-wpf]').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  wpFilter = f;
+  renderWp();
+}
+
+function addWp() {
+  const content = document.getElementById('wp-content').value.trim();
+  if (!content) return;
+  wps.push({
+    id: uid(),
+    content,
+    subject: document.getElementById('wp-subject').value,
+    tag: document.getElementById('wp-tag').value.trim(),
+    date: today(),
+    cause: document.getElementById('wp-cause').value.trim(),
+    countermeasure: document.getElementById('wp-counter').value.trim(),
+    status: 'unresolved',
+  });
+  persist();
+  document.getElementById('wp-content').value = '';
+  document.getElementById('wp-tag').value = '';
+  document.getElementById('wp-cause').value = '';
+  document.getElementById('wp-counter').value = '';
+  document.getElementById('wp-form').style.display = 'none';
+  showToast();
+  renderWp();
+}
+
+function resolveWp(id) {
+  wps = wps.map(w => w.id===id ? {...w, status:'resolved', resolvedDate:today()} : w);
+  persist(); renderWp();
+}
+function deleteWp(id) {
+  if (!confirm('削除しますか？')) return;
+  wps = wps.filter(w=>w.id!==id);
+  persist(); renderWp();
+}
+
+function renderWp() {
+  const ta = thirtyAgo();
+  const filtered = wps.filter(w => {
+    if (wpFilter==='unresolved') return w.status!=='resolved';
+    if (wpFilter==='recent')     return w.status==='resolved' && (w.resolvedDate||'')>=ta;
+    return w.status==='resolved' && (w.resolvedDate||'')<ta;
+  });
+  const tbody = document.getElementById('wp-tbody');
+  const empty = document.getElementById('wp-empty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map(w=>`<tr>
+    <td style="max-width:180px;color:var(--t1)">${w.content}</td>
+    <td>${chipSub(w.subject)}</td>
+    <td>${w.tag ? chip('gray',w.tag) : ''}</td>
+    <td style="color:var(--t2);font-size:12px">${w.date}</td>
+    <td style="color:var(--t3);font-size:12px">${w.cause||''}</td>
+    <td style="color:var(--t3);font-size:12px">${w.countermeasure||''}</td>
+    <td style="display:flex;gap:6px;padding:12px 10px">
+      ${w.status!=='resolved' ? `<button class="btn btn-green btn-sm" onclick="resolveWp('${w.id}')">解決</button>` : ''}
+      <button class="btn btn-sm" style="background:rgba(248,81,73,.15);color:var(--red)" onclick="deleteWp('${w.id}')">削除</button>
+    </td>
+  </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  4. WEEKLY PLAN
+// ═══════════════════════════════════════════
+function renderWeekly() {
+  document.getElementById('cfg-weekH').value   = cfg.weekH;
+  document.getElementById('cfg-rateGoal').value = cfg.rateGoal;
+  document.getElementById('cfg-wpGoal').value   = cfg.wpGoal;
+
+  const wsStr = wkStart();
+  const weekSubH = SUBJECTS.reduce((a,s)=>({...a,[s]:records.filter(r=>r.subject===s&&r.date>=wsStr).reduce((x,r)=>x+r.hours,0)}),{});
+
+  const rows = document.getElementById('weekly-sub-rows');
+  rows.innerHTML = SUBJECTS.map(s=>{
+    const goal = cfg.subH?.[s] || 5;
+    const pct  = Math.min(100, ((weekSubH[s]||0)/goal)*100).toFixed(0);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      ${chipSub(s)}
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <input type="number" step="0.5" min="0" value="${goal}" onchange="updateSubH('${s}',this.value)" style="width:60px">
+          <span style="font-size:12px;color:var(--t2)">h目標</span>
+          <span style="font-size:12px;color:${SC_HEX[s]}">${(weekSubH[s]||0).toFixed(1)}h実績</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${SC_HEX[s]}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Priority tasks
+  const pt = document.getElementById('weekly-priority-tasks');
+  const hiTasks = tasks.filter(t=>t.status!=='done'&&t.priority==='high');
+  if (!hiTasks.length) { pt.innerHTML='<div style="font-size:13px;color:var(--t3)">優先度「高」のタスクはありません</div>'; }
+  else {
+    pt.innerHTML = SUBJECTS.map(s=>{
+      const ts = hiTasks.filter(t=>t.subject===s);
+      if (!ts.length) return '';
+      return `<div style="margin-bottom:12px">${chipSub(s)}${ts.slice(0,3).map(t=>`<div style="font-size:13px;color:var(--t1);padding:5px 0 5px 12px;border-left:2px solid ${SC_HEX[s]}50;margin-top:4px">${t.title}</div>`).join('')}</div>`;
+    }).join('');
+  }
+
+  // WP bars
+  const wb = document.getElementById('weekly-wp-bars');
+  wb.innerHTML = SUBJECTS.map(s=>{
+    const cnt = wps.filter(w=>w.subject===s&&w.status!=='resolved').length;
+    const pct = Math.min(100,(cnt/20)*100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      ${chipSub(s)}
+      <div class="bar-wrap" style="flex:1"><div class="bar-fill" style="width:${pct}%;background:${SC_HEX[s]}"></div></div>
+      <span style="font-size:12px;color:var(--t2);min-width:30px;text-align:right">${cnt}件</span>
+    </div>`;
+  }).join('');
+}
+
+function updateSubH(s, v) { cfg.subH = {...cfg.subH, [s]:+v}; }
+
+function saveCfg() {
+  cfg.weekH     = +document.getElementById('cfg-weekH').value || 20;
+  cfg.rateGoal  = +document.getElementById('cfg-rateGoal').value || 90;
+  cfg.wpGoal    = +document.getElementById('cfg-wpGoal').value || 5;
+  persist(); showToast();
+}
+
+// ═══════════════════════════════════════════
+//  5. TASKS
+// ═══════════════════════════════════════════
+function toggleTaskForm() {
+  const f = document.getElementById('task-form');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+function setTaskFilter(el, f) {
+  document.querySelectorAll('#page-tasks .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  taskFilter = f;
+  renderTasks();
+}
+
+function addTask() {
+  const title = document.getElementById('t-title').value.trim();
+  if (!title) return;
+  tasks.push({
+    id: uid(),
+    title,
+    subject: document.getElementById('t-subject').value,
+    deadline: document.getElementById('t-deadline').value,
+    priority: document.getElementById('t-priority').value,
+    status: 'todo',
+  });
+  persist();
+  document.getElementById('t-title').value = '';
+  document.getElementById('task-form').style.display='none';
+  showToast(); renderTasks();
+}
+
+function setTaskStatus(id, status) {
+  tasks = tasks.map(t=>t.id===id?{...t,status}:t);
+  persist(); renderTasks();
+}
+function deleteTask(id) {
+  tasks = tasks.filter(t=>t.id!==id);
+  persist(); renderTasks();
+}
+
+function renderTasks() {
+  const todayStr = today();
+  const filtered = tasks.filter(t=>taskFilter==='all'||t.status===taskFilter);
+  const tbody = document.getElementById('task-tbody');
+  const empty = document.getElementById('task-empty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map(t=>{
+    const overdue = t.status!=='done' && t.deadline<todayStr;
+    const PL = {high:'高',medium:'中',low:'低'};
+    return `<tr style="opacity:${t.status==='done'?0.45:1}">
+      <td><input type="checkbox" ${t.status==='done'?'checked':''} onchange="setTaskStatus('${t.id}',this.checked?'done':'todo')"></td>
+      <td style="color:${t.status==='done'?'var(--t3)':'var(--t1)'};text-decoration:${t.status==='done'?'line-through':'none'}">${t.title}</td>
+      <td>${chipSub(t.subject)}</td>
+      <td>${chip(t.priority, PL[t.priority])}</td>
+      <td style="color:${overdue?'var(--red)':'var(--t3)'};font-size:12px">${t.deadline}</td>
+      <td>
+        <select onchange="setTaskStatus('${t.id}',this.value)" style="width:90px;font-size:12px;padding:5px 8px">
+          <option value="todo" ${t.status==='todo'?'selected':''}>未着手</option>
+          <option value="inprogress" ${t.status==='inprogress'?'selected':''}>進行中</option>
+          <option value="done" ${t.status==='done'?'selected':''}>完了</option>
+        </select>
+      </td>
+      <td><button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;line-height:1">×</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  6. HISTORY
+// ═══════════════════════════════════════════
+function setHistFilter(el, f) {
+  document.querySelectorAll('#hist-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  histFilter = f;
+  renderHistory();
+}
+function deleteRecord(id) {
+  records = records.filter(r=>r.id!==id);
+  persist(); renderHistory();
+}
+function renderHistory() {
+  const filtered = records.filter(r=>histFilter==='all'||r.subject===histFilter).slice().reverse();
+  const tbody = document.getElementById('hist-tbody');
+  const empty = document.getElementById('hist-empty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map(r=>`<tr>
+    <td style="color:var(--t2);font-size:12px">${r.date}</td>
+    <td>${chipSub(r.subject)}</td>
+    <td style="color:var(--t1)">${r.content}</td>
+    <td style="color:var(--t2)">${r.hours}h</td>
+    <td style="color:var(--yellow)">${'★'.repeat(r.understanding)}${'☆'.repeat(5-r.understanding)}</td>
+    <td style="color:var(--t3);font-size:12px;max-width:160px">${r.memo||''}</td>
+    <td><button onclick="deleteRecord('${r.id}')" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;line-height:1">×</button></td>
+  </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  7. ANALYSIS
+// ═══════════════════════════════════════════
+const CH_OPTS = {
+  plugins:{ legend:{display:false} },
+  scales:{
+    x:{ grid:{color:'rgba(48,54,61,.6)'}, ticks:{color:'#484F58',font:{size:11}} },
+    y:{ grid:{color:'rgba(48,54,61,.6)'}, ticks:{color:'#484F58',font:{size:11}} }
+  }
+};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function renderAnalysis() {
+  const totalH = records.reduce((s,r)=>s+r.hours,0);
+  const stats = document.getElementById('an-stats');
+  stats.innerHTML = [
+    {l:'総学習時間',v:totalH.toFixed(1)+'h',c:'var(--far)'},
+    {l:'学習記録数',v:records.length+'件',c:'var(--tcp)'},
+    {l:'弱点登録数',v:wps.length+'件',c:'var(--reg)'},
+    {l:'弱点解消数',v:wps.filter(w=>w.status==='resolved').length+'件',c:'var(--aud)'},
+  ].map(x=>`<div class="card"><div class="lbl">${x.l}</div><div class="stat-val" style="color:${x.c}">${x.v}</div></div>`).join('');
+
+  // Weekly hours
+  const wMap = {};
+  records.forEach(r=>{
+    const d=new Date(r.date); d.setDate(d.getDate()-((d.getDay()+6)%7));
+    const k=d.toISOString().split('T')[0]; wMap[k]=(wMap[k]||0)+r.hours;
+  });
+  const wkData = Object.entries(wMap).sort().slice(-10);
+  destroyChart('weekly');
+  charts.weekly = new Chart(document.getElementById('ch-weekly'), {
+    type:'bar',
+    data:{ labels:wkData.map(([k])=>k.slice(5)), datasets:[{data:wkData.map(([,v])=>+v.toFixed(1)),backgroundColor:'#58A6FF80',borderColor:'#58A6FF',borderWidth:2,borderRadius:4}] },
+    options:{...CH_OPTS,plugins:{legend:{display:false}}}
+  });
+
+  // Subject hours
+  const subH = SUBJECTS.map(s=>records.filter(r=>r.subject===s).reduce((x,r)=>x+r.hours,0));
+  destroyChart('subject');
+  charts.subject = new Chart(document.getElementById('ch-subject'), {
+    type:'bar',
+    data:{ labels:SUBJECTS, datasets:[{data:subH.map(v=>+v.toFixed(1)), backgroundColor:SUBJECTS.map(s=>SC_HEX[s]+'80'), borderColor:SUBJECTS.map(s=>SC_HEX[s]), borderWidth:2, borderRadius:4}] },
+    options:{...CH_OPTS,plugins:{legend:{display:false}}}
+  });
+
+  // WP pie
+  const wpData = SUBJECTS.map(s=>wps.filter(w=>w.subject===s&&w.status!=='resolved').length);
+  destroyChart('wp');
+  charts.wp = new Chart(document.getElementById('ch-wp'), {
+    type:'doughnut',
+    data:{ labels:SUBJECTS, datasets:[{data:wpData, backgroundColor:SUBJECTS.map(s=>SC_HEX[s]+'90'), borderColor:'transparent'}] },
+    options:{plugins:{legend:{display:false}},cutout:'60%'}
+  });
+  document.getElementById('an-wp-legend').innerHTML = SUBJECTS.map((s,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div style="width:10px;height:10px;border-radius:50%;background:${SC_HEX[s]}"></div>
+    <span style="font-size:13px;color:var(--t2)">${s}: ${wpData[i]}件</span>
+  </div>`).join('');
+
+  // Understanding
+  const undData = [1,2,3,4,5].map(n=>records.filter(r=>r.understanding===n).length);
+  destroyChart('und');
+  charts.und = new Chart(document.getElementById('ch-und'), {
+    type:'bar',
+    data:{ labels:['★','★★','★★★','★★★★','★★★★★'], datasets:[{data:undData, backgroundColor:'#D2992280', borderColor:'#D29922', borderWidth:2, borderRadius:4}] },
+    options:{...CH_OPTS,plugins:{legend:{display:false}}}
+  });
+}
+
+// ═══════════════════════════════════════════
+//  8. SETTINGS
+// ═══════════════════════════════════════════
+function renderSettings() {
+  document.getElementById('s-weekH').value    = cfg.weekH;
+  document.getElementById('s-rateGoal').value = cfg.rateGoal;
+  document.getElementById('s-wpGoal').value   = cfg.wpGoal;
+}
+
+function saveCfgFromSettings() {
+  cfg.weekH    = +document.getElementById('s-weekH').value || 20;
+  cfg.rateGoal = +document.getElementById('s-rateGoal').value || 90;
+  cfg.wpGoal   = +document.getElementById('s-wpGoal').value || 5;
+  // Sync to weekly page
+  persist(); showToast();
+}
+
+function clearAll() {
+  if (!confirm('本当にすべてのデータを削除しますか？')) return;
+  records=[]; wps=[]; tasks=[]; persist();
+  alert('削除しました。');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+renderDashboard();
+</script>
+</body>
+</html>
